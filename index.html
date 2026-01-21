@@ -19,17 +19,17 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow: hidden; /* Prevents scrolling during gameplay */
+            overflow: hidden; 
             height: 100vh;
+            -webkit-tap-highlight-color: transparent;
         }
-
-        h2 { margin: 10px 0; color: var(--primary); font-size: 1.2rem; }
 
         #main-container {
             width: 100%;
             max-width: 600px;
-            padding: 0 10px;
+            padding: 10px;
             box-sizing: border-box;
+            z-index: 10;
         }
 
         #infoBar {
@@ -39,94 +39,89 @@
             font-size: 14px;
         }
 
-        .stat-box { background: #111; padding: 5px 10px; border: 1px solid #444; border-radius: 4px; }
+        .stat-box { background: rgba(17, 17, 17, 0.8); padding: 5px 10px; border: 1px solid #444; border-radius: 4px; }
 
         #gameArea {
             position: relative;
             width: 100%;
             aspect-ratio: 6 / 4;
-            background: #000;
             border: 2px solid #333;
+            background: black;
         }
 
         canvas {
             width: 100%;
             height: 100%;
             display: block;
-            touch-action: none; /* Disables browser gestures like zooming */
+            touch-action: none;
         }
 
-        /* Responsive Mobile Controls */
+        /* Mobile Controls - Positioned for Android/iPad thumbs */
         #mobile-controls {
             display: flex;
             position: fixed;
-            bottom: 20px;
+            bottom: 25px;
             left: 0;
             width: 100%;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 25px;
             box-sizing: border-box;
             z-index: 100;
             pointer-events: none;
         }
 
-        .d-pad { display: flex; gap: 10px; pointer-events: auto; }
-        .action-pad { pointer-events: auto; }
+        .d-pad, .action-pad { pointer-events: auto; display: flex; gap: 15px; }
 
         .ctrl-btn {
-            width: 70px;
-            height: 70px;
+            width: 75px;
+            height: 75px;
             background: rgba(164, 101, 255, 0.2);
             border: 2px solid var(--primary);
             border-radius: 50%;
             color: white;
-            font-size: 24px;
+            font-size: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
 
         #fireBtn {
             background: rgba(255, 68, 68, 0.3);
             border-color: var(--danger);
-            width: 85px;
-            height: 85px;
+            width: 90px;
+            height: 90px;
             font-weight: bold;
+            font-size: 18px;
         }
 
         .ctrl-btn:active { background: rgba(164, 101, 255, 0.5); }
         #fireBtn:active { background: rgba(255, 68, 68, 0.6); }
 
-        /* Start Screen & Quiz */
+        /* Overlays */
         #startScreen, #quizBox {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 50;
+            z-index: 200;
             padding: 20px;
             box-sizing: border-box;
         }
 
-        .start-btn { padding: 15px 30px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 8px; }
+        .start-btn { padding: 15px 40px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 8px; }
 
         #options button {
-            width: 100%; margin: 5px 0; padding: 12px;
+            width: 100%; margin: 6px 0; padding: 12px;
             background: #222; color: white; border: 1px solid #444; border-radius: 5px;
+            font-size: 0.9rem;
         }
-
-        .danger-flash { animation: flashRed 0.2s; }
-        @keyframes flashRed { 0% { background: rgba(255,0,0,0.5); } 100% { background: transparent; } }
     </style>
 </head>
 <body>
-
-<h2>🌌 Galaxy Quest: IR</h2>
 
 <div id="main-container">
     <div id="infoBar">
@@ -138,14 +133,14 @@
         <canvas id="game" width="600" height="400"></canvas>
         
         <div id="startScreen">
-            <h3 style="color: var(--primary)">MISSION START</h3>
-            <p style="font-size: 0.9rem; text-align: center;">Android/iPad: Use the buttons to move and fire!</p>
-            <input type="text" id="playerNameInput" placeholder="Enter Pilot Name" maxlength="12" style="padding:10px; margin-bottom:10px;">
+            <h2 style="color: var(--primary); margin: 0;">GALAXY QUEST</h2>
+            <p style="text-align: center; font-size: 0.8rem;">Defend the Galaxy & Learn IR Theory!</p>
+            <input type="text" id="playerNameInput" placeholder="Pilot Name" maxlength="12" style="padding:10px; margin-bottom:15px; width: 70%; text-align: center;">
             <button class="start-btn" onclick="startGame()">ENGAGE</button>
         </div>
 
         <div id="quizBox" style="display: none;">
-            <p id="question" style="text-align: center;"></p>
+            <p id="question" style="text-align: center; font-size: 1rem; line-height: 1.4;"></p>
             <div id="options" style="width: 100%;"></div>
         </div>
     </div>
@@ -167,88 +162,102 @@ const ctx = canvas.getContext("2d");
 
 // Game Settings
 let ship = { x: 280, y: 340, w: 40, h: 25 };
-let lasers = [], asteroids = [], keys = {};
+let lasers = [], asteroids = [], stars = [], keys = {};
 let score = 0, lives = 5, gameActive = false, gamePaused = false;
 
+// Starfield
+for(let i=0; i<80; i++) stars.push({ x: Math.random()*600, y: Math.random()*400, s: Math.random()*2 });
+
+// --- FULL 30 QUESTION DATABASE ---
 const questions = [
-    { word: "Realism", def: "A theory viewing states as rational actors pursuing power." },
-    { word: "Liberalism", def: "Emphasis on cooperation and international institutions." },
-    { word: "Hard Power", def: "Use of military or economic pressure to influence others." },
-    { word: "Diplomacy", def: "Managing international relations through negotiation." }
+    { word: "Realism", def: "A theory that views states as rational actors pursuing power and survival in an anarchic international system." },
+    { word: "Liberalism", def: "A theory that emphasises cooperation, institutions, democracy, and economic interdependence in reducing conflict." },
+    { word: "Constructivism", def: "A theory arguing that international politics is shaped by ideas, norms, identities, and social interactions." },
+    { word: "Neorealism", def: "A realist theory that explains state behaviour primarily through the structure of the international system, especially anarchy." },
+    { word: "Neoliberal Institutionalism", def: "A theory that argues international institutions facilitate cooperation even under anarchy." },
+    { word: "Anarchy", def: "The absence of a central authority above states in international politics." },
+    { word: "Balance of Power", def: "A situation where power is distributed among states so that no single state dominates others." },
+    { word: "Security Dilemma", def: "A situation where one state’s defensive actions increase insecurity in other states, leading to escalation." },
+    { word: "National Interest", def: "A state’s primary goals and objectives in foreign policy, usually centred on security and prosperity." },
+    { word: "State Sovereignty", def: "The principle that a state has supreme authority over its territory and domestic affairs." },
+    { word: "Hard Power", def: "The use of military force or economic pressure to influence other states." },
+    { word: "Soft Power", def: "The ability to influence others through attraction, culture, values, and diplomacy." },
+    { word: "Smart Power", def: "The strategic combination of hard power and soft power." },
+    { word: "Deterrence", def: "The prevention of aggression by threatening unacceptable retaliation." },
+    { word: "Coercive Diplomacy", def: "The use of threats or limited force to persuade a state to change its behaviour." },
+    { word: "Diplomacy", def: "The management of international relations through negotiation and dialogue." },
+    { word: "Economic Sanctions", def: "The use of trade or financial restrictions to pressure a state into changing its policies." },
+    { word: "Military Intervention", def: "The use of armed force by a state in another state’s territory." },
+    { word: "Foreign Aid", def: "Financial, technical, or humanitarian assistance given to another country." },
+    { word: "Proxy War", def: "A conflict in which major powers support opposing sides without direct confrontation." },
+    { word: "Collective Security", def: "A system where states agree to respond collectively to threats against any member." },
+    { word: "Multilateralism", def: "Cooperation among three or more states on shared issues." },
+    { word: "Bilateralism", def: "Cooperation or agreements between two states." },
+    { word: "Alliance", def: "A formal agreement between states for mutual support, often military." },
+    { word: "Non-Alignment", def: "A foreign policy stance of not formally aligning with major power blocs." },
+    { word: "International Law", def: "A set of rules and norms governing relations between states." },
+    { word: "Humanitarian Intervention", def: "The use of force to prevent or stop widespread human rights abuses." },
+    { word: "R2P (Responsibility to Protect)", def: "The principle that states must protect populations from mass atrocities, and the international community may intervene if they fail." },
+    { word: "Global Governance", def: "The collective management of global issues through international institutions and norms." },
+    { word: "Nationalism", def: "A belief that prioritises the interests, culture, and identity of one’s nation, often above others." }
 ];
 
-// --- MOBILE BUTTON LOGIC (Android/iPad Optimized) ---
+// --- MOBILE TOUCH LOGIC ---
 const setupBtn = (id, keyCode) => {
     const el = document.getElementById(id);
-    el.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[keyCode] = true; });
-    el.addEventListener("pointerup", (e) => { e.preventDefault(); keys[keyCode] = false; });
-    el.addEventListener("pointerleave", (e) => { e.preventDefault(); keys[keyCode] = false; });
+    el.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyCode] = true; });
+    el.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyCode] = false; });
 };
-
 setupBtn("leftBtn", "ArrowLeft");
 setupBtn("rightBtn", "ArrowRight");
-
-// Dedicated Fire Button
-document.getElementById("fireBtn").addEventListener("pointerdown", (e) => {
-    e.preventDefault();
-    if (gameActive && !gamePaused) shoot();
+document.getElementById("fireBtn").addEventListener("touchstart", (e) => {
+    e.preventDefault(); if(gameActive && !gamePaused) shoot();
 });
 
 // Keyboard
 window.addEventListener("keydown", e => {
     keys[e.code] = true;
-    if (e.code === "Space") shoot();
+    if(e.code === "Space" && gameActive && !gamePaused) shoot();
 });
 window.addEventListener("keyup", e => keys[e.code] = false);
 
 function shoot() {
-    if (lasers.length < 5) { // Limit fire rate
-        lasers.push({ x: ship.x + 18, y: ship.y });
-    }
+    if(lasers.length < 5) lasers.push({ x: ship.x + 18, y: ship.y });
 }
 
 function startGame() {
     document.getElementById("startScreen").style.display = "none";
     score = 0; lives = 5; asteroids = []; lasers = [];
-    gameActive = true;
-    gamePaused = false;
-    updateUI();
+    gameActive = true; gamePaused = false;
     gameLoop();
 }
 
 function update() {
-    if (!gameActive || gamePaused) return;
+    if(!gameActive || gamePaused) return;
 
     if (keys["ArrowLeft"] && ship.x > 0) ship.x -= 6;
     if (keys["ArrowRight"] && ship.x < canvas.width - ship.w) ship.x += 6;
 
-    lasers.forEach((l, i) => { 
-        l.y -= 8; 
-        if (l.y < 0) lasers.splice(i, 1); 
-    });
+    lasers.forEach((l, i) => { l.y -= 8; if(l.y < 0) lasers.splice(i, 1); });
+    stars.forEach(s => { s.y += 0.5; if(s.y > 400) s.y = 0; });
 
-    if (Math.random() < 0.02) {
-        asteroids.push({ x: Math.random() * (canvas.width - 30), y: -30, size: 30 });
+    if(Math.random() < 0.015) {
+        asteroids.push({ x: Math.random() * 570, y: -30, size: 30 });
     }
 
     asteroids.forEach((a, ai) => {
-        a.y += 2.5;
-        // Collision: Laser
+        a.y += 2.2;
         lasers.forEach((l, li) => {
-            if (rectIntersect(l.x, l.y, 4, 10, a.x, a.y, a.size, a.size)) {
+            if(rectIntersect(l.x, l.y, 4, 10, a.x, a.y, a.size, a.size)) {
                 lasers.splice(li, 1);
                 asteroids.splice(ai, 1);
                 triggerQuiz();
             }
         });
-        // Collision: Ship
-        if (rectIntersect(ship.x, ship.y, ship.w, ship.h, a.x, a.y, a.size, a.size)) {
+        if(rectIntersect(ship.x, ship.y, ship.w, ship.h, a.x, a.y, a.size, a.size)) {
             asteroids.splice(ai, 1);
             lives--;
-            updateUI();
-            canvas.parentElement.classList.add("danger-flash");
-            setTimeout(() => canvas.parentElement.classList.remove("danger-flash"), 200);
-            if (lives <= 0) endGame();
+            if(lives <= 0) endGame();
         }
     });
 }
@@ -258,38 +267,38 @@ function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
 }
 
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // DRAW SHIP WITH GUNS
+    ctx.fillStyle = "white";
+    stars.forEach(s => ctx.fillRect(s.x, s.y, s.s, s.s));
+
+    // SHIP WITH GUNS
     ctx.fillStyle = "#a465ff";
-    // Main Body
-    ctx.fillRect(ship.x, ship.y + 5, ship.w, 15);
-    // Left Gun
-    ctx.fillRect(ship.x + 5, ship.y, 5, 10);
-    // Right Gun
-    ctx.fillRect(ship.x + ship.w - 10, ship.y, 5, 10);
-    // Cockpit
+    ctx.fillRect(ship.x, ship.y + 5, ship.w, 15); // Main Wing
+    ctx.fillRect(ship.x + 5, ship.y, 5, 12);     // Left Gun
+    ctx.fillRect(ship.x + ship.w - 10, ship.y, 5, 12); // Right Gun
     ctx.fillStyle = "#00f0ff";
-    ctx.fillRect(ship.x + 15, ship.y + 8, 10, 8);
+    ctx.fillRect(ship.x + 15, ship.y + 8, 10, 8); // Cockpit
 
-    // Lasers
     ctx.fillStyle = "yellow";
     lasers.forEach(l => ctx.fillRect(l.x, l.y, 4, 12));
-
-    // Asteroids
     ctx.fillStyle = "#888";
     asteroids.forEach(a => ctx.fillRect(a.x, a.y, a.size, a.size));
+    
+    document.getElementById("score").textContent = score;
+    document.getElementById("lives").textContent = lives;
 }
 
 function triggerQuiz() {
     gamePaused = true;
     const q = questions[Math.floor(Math.random() * questions.length)];
-    document.getElementById("question").innerHTML = `<b>Definition:</b><br>"${q.def}"`;
+    document.getElementById("question").innerHTML = `<b>Match the Term to the Definition:</b><br><br>"${q.def}"`;
     const opts = document.getElementById("options");
     opts.innerHTML = "";
     
     let choices = [q.word];
-    while(choices.length < 3) {
+    while(choices.length < 4) {
         let rw = questions[Math.floor(Math.random() * questions.length)].word;
         if(!choices.includes(rw)) choices.push(rw);
     }
@@ -300,7 +309,6 @@ function triggerQuiz() {
         btn.textContent = choice;
         btn.onclick = () => {
             if (choice === q.word) score += 10;
-            updateUI();
             document.getElementById("quizBox").style.display = "none";
             gamePaused = false;
         };
@@ -309,14 +317,9 @@ function triggerQuiz() {
     document.getElementById("quizBox").style.display = "flex";
 }
 
-function updateUI() {
-    document.getElementById("score").textContent = score;
-    document.getElementById("lives").textContent = lives;
-}
-
 function endGame() {
     gameActive = false;
-    alert("Game Over! Final Score: " + score);
+    alert("Shields Critical! Mission Over. Final Score: " + score);
     location.reload();
 }
 
