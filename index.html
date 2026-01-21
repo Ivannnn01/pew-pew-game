@@ -2,107 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Galaxy Quest: IR Edition</title>
     <style>
         :root {
             --primary: #a465ff;
             --bg: #050505;
+            --danger: #ff4444;
         }
 
         body {
             margin: 0;
             background: var(--bg);
             color: white;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-x: hidden;
-            touch-action: manipulation;
+            overflow: hidden; /* Prevents scrolling during gameplay */
+            height: 100vh;
         }
 
-        h2 { margin: 10px 0; color: var(--primary); text-shadow: 0 0 10px var(--primary); font-size: 1.5rem; }
+        h2 { margin: 10px 0; color: var(--primary); font-size: 1.2rem; }
 
-        /* Responsive Container */
         #main-container {
-            width: 95%;
+            width: 100%;
             max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 100px; /* Space for mobile buttons at bottom */
+            padding: 0 10px;
+            box-sizing: border-box;
         }
 
         #infoBar {
             display: flex;
             justify-content: space-between;
-            width: 100%;
+            margin-bottom: 5px;
             font-size: 14px;
-            font-weight: bold;
         }
 
         .stat-box { background: #111; padding: 5px 10px; border: 1px solid #444; border-radius: 4px; }
 
-        /* Game Area Scales to Screen */
         #gameArea {
             position: relative;
             width: 100%;
-            aspect-ratio: 6 / 4; /* Maintains game proportions */
+            aspect-ratio: 6 / 4;
             background: #000;
+            border: 2px solid #333;
         }
 
         canvas {
             width: 100%;
             height: 100%;
             display: block;
-            border: 2px solid #333;
-            background: radial-gradient(circle at bottom, #1b0030 0%, #000 100%);
-            touch-action: none;
+            touch-action: none; /* Disables browser gestures like zooming */
         }
 
-        /* Fixed Mobile Controls for Thumbs */
+        /* Responsive Mobile Controls */
         #mobile-controls {
-            display: none; /* Hidden on Desktop */
+            display: flex;
             position: fixed;
-            bottom: 30px;
+            bottom: 20px;
             left: 0;
             width: 100%;
             justify-content: space-between;
-            padding: 0 30px;
+            padding: 0 20px;
             box-sizing: border-box;
             z-index: 100;
             pointer-events: none;
         }
 
+        .d-pad { display: flex; gap: 10px; pointer-events: auto; }
+        .action-pad { pointer-events: auto; }
+
         .ctrl-btn {
-            width: 75px;
-            height: 75px;
-            background: rgba(164, 101, 255, 0.3);
-            border: 3px solid var(--primary);
+            width: 70px;
+            height: 70px;
+            background: rgba(164, 101, 255, 0.2);
+            border: 2px solid var(--primary);
             border-radius: 50%;
             color: white;
-            font-size: 30px;
+            font-size: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            pointer-events: auto;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
-        .ctrl-btn:active { background: rgba(164, 101, 255, 0.7); }
-
-        /* Show buttons only on touch devices */
-        @media (pointer: coarse) {
-            #mobile-controls { display: flex; }
+        #fireBtn {
+            background: rgba(255, 68, 68, 0.3);
+            border-color: var(--danger);
+            width: 85px;
+            height: 85px;
+            font-weight: bold;
         }
 
-        /* Start Screen Overlay */
+        .ctrl-btn:active { background: rgba(164, 101, 255, 0.5); }
+        #fireBtn:active { background: rgba(255, 68, 68, 0.6); }
+
+        /* Start Screen & Quiz */
         #startScreen, #quizBox {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -110,27 +111,17 @@
             z-index: 50;
             padding: 20px;
             box-sizing: border-box;
-            text-align: center;
         }
 
-        .instructions { font-size: 0.8rem; text-align: left; list-style: none; padding: 0; }
-        input[type="text"] { 
-            padding: 10px; width: 80%; margin-bottom: 10px; 
-            background: #000; color: white; border: 1px solid var(--primary);
-        }
-        .start-btn { padding: 12px 24px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 5px; }
+        .start-btn { padding: 15px 30px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 8px; }
 
         #options button {
             width: 100%; margin: 5px 0; padding: 12px;
             background: #222; color: white; border: 1px solid #444; border-radius: 5px;
         }
 
-        #leaderboardPanel { width: 100%; background: #111; padding: 10px; border-radius: 5px; margin-top: 10px; }
-        #scoreList { list-style: none; padding: 0; font-size: 14px; }
-        #scoreList li { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding: 5px 0; }
-
         .danger-flash { animation: flashRed 0.2s; }
-        @keyframes flashRed { 0% { background: #500; } 100% { background: transparent; } }
+        @keyframes flashRed { 0% { background: rgba(255,0,0,0.5); } 100% { background: transparent; } }
     </style>
 </head>
 <body>
@@ -140,82 +131,83 @@
 <div id="main-container">
     <div id="infoBar">
         <div class="stat-box">Score: <span id="score">0</span></div>
-        <div class="stat-box" style="color: #ff4444;">Shields: <span id="lives">5</span></div>
+        <div class="stat-box" style="color: var(--danger);">Shields: <span id="lives">5</span></div>
     </div>
 
     <div id="gameArea">
         <canvas id="game" width="600" height="400"></canvas>
         
         <div id="startScreen">
-            <h3 style="color: var(--primary)">MISSION BRIEFING</h3>
-            <ul class="instructions">
-                <li>◀️ ▶️ Buttons or Arrows to Move</li>
-                <li>🚀 Tap Galaxy or Space to Fire</li>
-                <li>💥 Answer questions to score!</li>
-            </ul>
-            <input type="text" id="playerNameInput" placeholder="Enter Pilot Name" maxlength="12">
+            <h3 style="color: var(--primary)">MISSION START</h3>
+            <p style="font-size: 0.9rem; text-align: center;">Android/iPad: Use the buttons to move and fire!</p>
+            <input type="text" id="playerNameInput" placeholder="Enter Pilot Name" maxlength="12" style="padding:10px; margin-bottom:10px;">
             <button class="start-btn" onclick="startGame()">ENGAGE</button>
         </div>
 
         <div id="quizBox" style="display: none;">
-            <p id="question"></p>
+            <p id="question" style="text-align: center;"></p>
             <div id="options" style="width: 100%;"></div>
         </div>
-    </div>
-
-    <div id="leaderboardPanel">
-        <h4 style="margin:0; color:#ffeb3b">🏆 Top Commanders</h4>
-        <ul id="scoreList"></ul>
     </div>
 </div>
 
 <div id="mobile-controls">
-    <div id="leftBtn" class="ctrl-btn">◀</div>
-    <div id="rightBtn" class="ctrl-btn">▶</div>
+    <div class="d-pad">
+        <div id="leftBtn" class="ctrl-btn">◀</div>
+        <div id="rightBtn" class="ctrl-btn">▶</div>
+    </div>
+    <div class="action-pad">
+        <div id="fireBtn" class="ctrl-btn">FIRE</div>
+    </div>
 </div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// Game Variables
-let ship = { x: 280, y: 350, w: 40, h: 20 };
+// Game Settings
+let ship = { x: 280, y: 340, w: 40, h: 25 };
 let lasers = [], asteroids = [], keys = {};
 let score = 0, lives = 5, gameActive = false, gamePaused = false;
-let playerName = "Guest";
 
 const questions = [
-    { word: "Realism", def: "States are rational actors pursuing power in an anarchic system." },
-    { word: "Liberalism", def: "Emphasis on cooperation, institutions, and democracy." },
-    { word: "Anarchy", def: "The absence of a central authority above states." },
-    { word: "Soft Power", def: "Influencing others through attraction and culture." },
-    { word: "Sovereignty", def: "A state's supreme authority over its territory." }
+    { word: "Realism", def: "A theory viewing states as rational actors pursuing power." },
+    { word: "Liberalism", def: "Emphasis on cooperation and international institutions." },
+    { word: "Hard Power", def: "Use of military or economic pressure to influence others." },
+    { word: "Diplomacy", def: "Managing international relations through negotiation." }
 ];
 
-// --- INPUTS ---
-window.addEventListener("keydown", e => keys[e.code] = true);
-window.addEventListener("keyup", e => keys[e.code] = false);
-
-// Mobile Controls
-const setupBtn = (btn, key) => {
-    btn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[key] = true; });
-    btn.addEventListener("pointerup", () => keys[key] = false);
-    btn.addEventListener("pointerleave", () => keys[key] = false);
+// --- MOBILE BUTTON LOGIC (Android/iPad Optimized) ---
+const setupBtn = (id, keyCode) => {
+    const el = document.getElementById(id);
+    el.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[keyCode] = true; });
+    el.addEventListener("pointerup", (e) => { e.preventDefault(); keys[keyCode] = false; });
+    el.addEventListener("pointerleave", (e) => { e.preventDefault(); keys[keyCode] = false; });
 };
-setupBtn(document.getElementById("leftBtn"), "ArrowLeft");
-setupBtn(document.getElementById("rightBtn"), "ArrowRight");
 
-// Fire on Canvas Tap
-canvas.addEventListener("pointerdown", (e) => {
-    if (gameActive && !gamePaused) {
-        // Prevent double fire when clicking UI buttons
-        if (e.target === canvas) lasers.push({ x: ship.x + 18, y: ship.y });
-    }
+setupBtn("leftBtn", "ArrowLeft");
+setupBtn("rightBtn", "ArrowRight");
+
+// Dedicated Fire Button
+document.getElementById("fireBtn").addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    if (gameActive && !gamePaused) shoot();
 });
 
+// Keyboard
+window.addEventListener("keydown", e => {
+    keys[e.code] = true;
+    if (e.code === "Space") shoot();
+});
+window.addEventListener("keyup", e => keys[e.code] = false);
+
+function shoot() {
+    if (lasers.length < 5) { // Limit fire rate
+        lasers.push({ x: ship.x + 18, y: ship.y });
+    }
+}
+
 function startGame() {
-    const name = document.getElementById("playerNameInput").value.trim();
-    if (name) playerName = name;
     document.getElementById("startScreen").style.display = "none";
     score = 0; lives = 5; asteroids = []; lasers = [];
     gameActive = true;
@@ -224,23 +216,23 @@ function startGame() {
     gameLoop();
 }
 
-function spawnAsteroid() {
-    if (gameActive && !gamePaused && Math.random() < 0.02) {
-        asteroids.push({ x: Math.random() * (canvas.width - 30), y: -30, size: 30 });
-    }
-}
-
 function update() {
     if (!gameActive || gamePaused) return;
 
-    if ((keys["ArrowLeft"] || keys["KeyA"]) && ship.x > 0) ship.x -= 5;
-    if ((keys["ArrowRight"] || keys["KeyD"]) && ship.x < canvas.width - ship.w) ship.x += 5;
-    if (keys["Space"]) { lasers.push({ x: ship.x + 18, y: ship.y }); keys["Space"] = false; }
+    if (keys["ArrowLeft"] && ship.x > 0) ship.x -= 6;
+    if (keys["ArrowRight"] && ship.x < canvas.width - ship.w) ship.x += 6;
 
-    lasers.forEach((l, i) => { l.y -= 7; if (l.y < 0) lasers.splice(i, 1); });
-    
+    lasers.forEach((l, i) => { 
+        l.y -= 8; 
+        if (l.y < 0) lasers.splice(i, 1); 
+    });
+
+    if (Math.random() < 0.02) {
+        asteroids.push({ x: Math.random() * (canvas.width - 30), y: -30, size: 30 });
+    }
+
     asteroids.forEach((a, ai) => {
-        a.y += 2;
+        a.y += 2.5;
         // Collision: Laser
         lasers.forEach((l, li) => {
             if (rectIntersect(l.x, l.y, 4, 10, a.x, a.y, a.size, a.size)) {
@@ -254,11 +246,11 @@ function update() {
             asteroids.splice(ai, 1);
             lives--;
             updateUI();
+            canvas.parentElement.classList.add("danger-flash");
+            setTimeout(() => canvas.parentElement.classList.remove("danger-flash"), 200);
             if (lives <= 0) endGame();
         }
-        if (a.y > canvas.height) asteroids.splice(ai, 1);
     });
-    spawnAsteroid();
 }
 
 function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
@@ -267,12 +259,23 @@ function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Ship
+
+    // DRAW SHIP WITH GUNS
     ctx.fillStyle = "#a465ff";
-    ctx.fillRect(ship.x, ship.y, ship.w, ship.h);
+    // Main Body
+    ctx.fillRect(ship.x, ship.y + 5, ship.w, 15);
+    // Left Gun
+    ctx.fillRect(ship.x + 5, ship.y, 5, 10);
+    // Right Gun
+    ctx.fillRect(ship.x + ship.w - 10, ship.y, 5, 10);
+    // Cockpit
+    ctx.fillStyle = "#00f0ff";
+    ctx.fillRect(ship.x + 15, ship.y + 8, 10, 8);
+
     // Lasers
     ctx.fillStyle = "yellow";
-    lasers.forEach(l => ctx.fillRect(l.x, l.y, 4, 10));
+    lasers.forEach(l => ctx.fillRect(l.x, l.y, 4, 12));
+
     // Asteroids
     ctx.fillStyle = "#888";
     asteroids.forEach(a => ctx.fillRect(a.x, a.y, a.size, a.size));
@@ -281,7 +284,7 @@ function draw() {
 function triggerQuiz() {
     gamePaused = true;
     const q = questions[Math.floor(Math.random() * questions.length)];
-    document.getElementById("question").innerHTML = `Definition:<br><i>"${q.def}"</i>`;
+    document.getElementById("question").innerHTML = `<b>Definition:</b><br>"${q.def}"`;
     const opts = document.getElementById("options");
     opts.innerHTML = "";
     
@@ -313,21 +316,8 @@ function updateUI() {
 
 function endGame() {
     gameActive = false;
-    alert(`Game Over, Commander ${playerName}! Score: ${score}`);
-    saveScore(playerName, score);
+    alert("Game Over! Final Score: " + score);
     location.reload();
-}
-
-function saveScore(n, s) {
-    let scores = JSON.parse(localStorage.getItem('gq_scores')) || [];
-    scores.push({n, s});
-    scores.sort((a,b) => b.s - a.s);
-    localStorage.setItem('gq_scores', JSON.stringify(scores.slice(0, 5)));
-}
-
-function loadScores() {
-    let scores = JSON.parse(localStorage.getItem('gq_scores')) || [];
-    document.getElementById("scoreList").innerHTML = scores.map(s => `<li><span>${s.n}</span><span>${s.s}</span></li>`).join("") || "<li>No Data</li>";
 }
 
 function gameLoop() {
@@ -336,8 +326,6 @@ function gameLoop() {
     draw();
     requestAnimationFrame(gameLoop);
 }
-
-loadScores();
 </script>
 </body>
 </html>
