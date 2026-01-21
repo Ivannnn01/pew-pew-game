@@ -2,41 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Galaxy Quest: IR Edition</title>
     <style>
         :root { --primary: #a465ff; --bg: #050505; --danger: #ff4444; }
 
         body {
-            margin: 0; background: var(--bg); color: white;
+            margin: 0; padding: 0;
+            background: var(--bg);
+            color: white;
             font-family: 'Segoe UI', Tahoma, sans-serif;
-            display: flex; flex-direction: column; align-items: center;
-            overflow: hidden; height: 100vh; width: 100vw;
+            display: flex; flex-direction: column;
+            align-items: center;
+            overflow: hidden; /* Stops scrolling */
+            height: 100vh; width: 100vw;
             -webkit-tap-highlight-color: transparent;
         }
 
-        #main-container {
-            width: 100%; height: 100%; display: flex; flex-direction: column; z-index: 10;
+        /* This container ensures the game never overflows the phone width */
+        #game-wrapper {
+            width: 100%;
+            max-width: 600px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
         #infoBar {
             display: flex; justify-content: space-between;
             padding: 10px; font-size: 14px; font-weight: bold;
-            background: rgba(0,0,0,0.8); border-bottom: 1px solid #333;
+            background: rgba(0,0,0,0.8); z-index: 10;
         }
 
         .stat-box { background: #111; padding: 4px 10px; border: 1px solid #444; border-radius: 4px; }
 
         #gameArea {
-            position: relative; flex-grow: 1; width: 100%; overflow: hidden;
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            overflow: hidden;
+            background: black;
         }
 
         canvas {
-            width: 100%; height: 100%; display: block; touch-action: none;
+            /* Force the canvas to fit the width of the screen while keeping proportions */
+            width: 100% !important;
+            height: auto !important;
+            display: block;
+            touch-action: none;
             background: radial-gradient(circle at bottom, #1b0030 0%, #000 100%);
         }
 
-        /* Responsive Controls */
         #mobile-controls {
             display: flex; position: absolute; bottom: 30px; width: 100%;
             justify-content: space-between; padding: 0 20px; box-sizing: border-box;
@@ -52,10 +69,9 @@
             user-select: none;
         }
 
-        #fireBtn { background: rgba(255, 68, 68, 0.3); border-color: var(--danger); width: 85px; height: 85px; font-size: 18px; }
+        #fireBtn { background: rgba(255, 68, 68, 0.3); border-color: var(--danger); width: 80px; height: 80px; }
         .ctrl-btn:active { background: rgba(164, 101, 255, 0.6); transform: scale(0.95); }
 
-        /* Overlays */
         #startScreen, #quizBox {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); display: flex; flex-direction: column;
@@ -63,24 +79,24 @@
             padding: 20px; box-sizing: border-box; text-align: center;
         }
 
-        .start-btn { padding: 12px 40px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 5px; font-size: 18px; }
+        .start-btn { padding: 12px 40px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 5px; }
         #options button { width: 100%; margin: 6px 0; padding: 14px; background: #222; color: white; border: 1px solid #555; border-radius: 6px; }
     </style>
 </head>
 <body>
 
-<div id="main-container">
+<div id="game-wrapper">
     <div id="infoBar">
         <div class="stat-box">Score: <span id="score">0</span></div>
         <div class="stat-box" style="color: var(--danger);">Shields: <span id="lives">5</span></div>
     </div>
 
     <div id="gameArea">
-        <canvas id="game"></canvas>
+        <canvas id="game" width="600" height="400"></canvas>
         
         <div id="startScreen">
             <h2 style="color: var(--primary); margin:0;">GALAXY QUEST</h2>
-            <p style="font-size: 0.9rem; margin: 15px 0;">Avoid Asteroids | Answer IR Questions</p>
+            <p style="font-size: 0.9rem; margin: 15px 0;">Use Buttons to Move & Fire</p>
             <input type="text" id="playerNameInput" placeholder="Pilot Name" maxlength="12" style="padding:10px; margin-bottom:20px; border: 1px solid var(--primary); background: #000; color: white; text-align: center; width: 70%;">
             <button class="start-btn" onclick="startGame()">ENGAGE</button>
         </div>
@@ -90,15 +106,15 @@
             <div id="options" style="width: 100%;"></div>
         </div>
     </div>
-</div>
 
-<div id="mobile-controls">
-    <div class="d-pad">
-        <div id="leftBtn" class="ctrl-btn">◀</div>
-        <div id="rightBtn" class="ctrl-btn">▶</div>
-    </div>
-    <div class="action-pad">
-        <div id="fireBtn" class="ctrl-btn">FIRE</div>
+    <div id="mobile-controls">
+        <div class="d-pad">
+            <div id="leftBtn" class="ctrl-btn">◀</div>
+            <div id="rightBtn" class="ctrl-btn">▶</div>
+        </div>
+        <div class="action-pad">
+            <div id="fireBtn" class="ctrl-btn">FIRE</div>
+        </div>
     </div>
 </div>
 
@@ -106,66 +122,45 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// --- RESPONSIVE LOGIC ---
-// This function resizes the game's internal resolution to match your screen exactly
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight - document.getElementById('infoBar').offsetHeight;
-    ship.y = canvas.height - 60; // Keep ship near the bottom
-    ship.x = (canvas.width / 2) - (ship.w / 2); // Center ship
-}
-window.addEventListener('resize', resize);
-
-let ship = { x: 0, y: 0, w: 40, h: 25 };
+// --- GAME STATE ---
+let ship = { x: 280, y: 340, w: 40, h: 20 };
 let lasers = [], asteroids = [], stars = [], keys = {};
 let score = 0, lives = 5, gameActive = false, gamePaused = false;
 
-// Initial setup
-resize();
-for(let i=0; i<80; i++) stars.push({ x: Math.random()*2000, y: Math.random()*2000, s: Math.random()*2 });
-// --- FULL 30 QUESTION DATABASE ---
+// Starfield
+for(let i=0; i<80; i++) stars.push({ x: Math.random()*600, y: Math.random()*400, s: Math.random()*2 });
+
 const questions = [
     { word: "Realism", def: "A theory that views states as rational actors pursuing power and survival in an anarchic international system." },
     { word: "Liberalism", def: "A theory that emphasises cooperation, institutions, democracy, and economic interdependence in reducing conflict." },
-    { word: "Constructivism", def: "A theory arguing that international politics is shaped by ideas, norms, identities, and social interactions." },
-    { word: "Neorealism", def: "A realist theory that explains state behaviour primarily through the structure of the international system, especially anarchy." },
-    { word: "Neoliberal Institutionalism", def: "A theory that argues international institutions facilitate cooperation even under anarchy." },
     { word: "Anarchy", def: "The absence of a central authority above states in international politics." },
-    { word: "Balance of Power", def: "A situation where power is distributed among states so that no single state dominates others." },
-    { word: "Security Dilemma", def: "A situation where one state’s defensive actions increase insecurity in other states, leading to escalation." },
-    { word: "National Interest", def: "A state’s primary goals and objectives in foreign policy, usually centred on security and prosperity." },
-    { word: "State Sovereignty", def: "The principle that a state has supreme authority over its territory and domestic affairs." },
+    { word: "Sovereignty", def: "The principle that a state has supreme authority over its territory and domestic affairs." },
     { word: "Hard Power", def: "The use of military force or economic pressure to influence other states." },
     { word: "Soft Power", def: "The ability to influence others through attraction, culture, values, and diplomacy." },
-    { word: "Smart Power", def: "The strategic combination of hard power and soft power." },
     { word: "Deterrence", def: "The prevention of aggression by threatening unacceptable retaliation." },
-    { word: "Coercive Diplomacy", def: "The use of threats or limited force to persuade a state to change its behaviour." },
-    { word: "Diplomacy", def: "The management of international relations through negotiation and dialogue." },
-    { word: "Economic Sanctions", def: "The use of trade or financial restrictions to pressure a state into changing its policies." },
-    { word: "Military Intervention", def: "The use of armed force by a state in another state’s territory." },
-    { word: "Foreign Aid", def: "Financial, technical, or humanitarian assistance given to another country." },
-    { word: "Proxy War", def: "A conflict in which major powers support opposing sides without direct confrontation." },
-    { word: "Collective Security", def: "A system where states agree to respond collectively to threats against any member." },
-    { word: "Multilateralism", def: "Cooperation among three or more states on shared issues." },
-    { word: "Bilateralism", def: "Cooperation or agreements between two states." },
-    { word: "Alliance", def: "A formal agreement between states for mutual support, often military." },
-    { word: "Non-Alignment", def: "A foreign policy stance of not formally aligning with major power blocs." },
+    { word: "National Interest", def: "A state’s primary goals and objectives in foreign policy, usually centred on security and prosperity." },
     { word: "International Law", def: "A set of rules and norms governing relations between states." },
-    { word: "Humanitarian Intervention", def: "The use of force to prevent or stop widespread human rights abuses." },
-    { word: "R2P (Responsibility to Protect)", def: "The principle that states must protect populations from mass atrocities, and the international community may intervene if they fail." },
-    { word: "Global Governance", def: "The collective management of global issues through international institutions and norms." },
     { word: "Nationalism", def: "A belief that prioritises the interests, culture, and identity of one’s nation, often above others." }
 ];
-// --- INPUTS ---
+
+// --- TOUCH HANDLING ---
 const setupBtn = (id, keyCode) => {
     const el = document.getElementById(id);
+    // touchstart/touchend are best for Android/iPad performance
     el.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyCode] = true; });
     el.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyCode] = false; });
+    // mouse support for desktop testing
+    el.addEventListener("mousedown", () => keys[keyCode] = true);
+    el.addEventListener("mouseup", () => keys[keyCode] = false);
 };
+
 setupBtn("leftBtn", "ArrowLeft");
 setupBtn("rightBtn", "ArrowRight");
 document.getElementById("fireBtn").addEventListener("touchstart", (e) => {
     e.preventDefault(); if(gameActive && !gamePaused) shoot();
+});
+document.getElementById("fireBtn").addEventListener("mousedown", () => {
+    if(gameActive && !gamePaused) shoot();
 });
 
 window.addEventListener("keydown", e => {
@@ -175,33 +170,32 @@ window.addEventListener("keydown", e => {
 window.addEventListener("keyup", e => keys[e.code] = false);
 
 function shoot() {
-    if(lasers.length < 5) lasers.push({ x: ship.x + (ship.w/2) - 2, y: ship.y });
+    if(lasers.length < 5) lasers.push({ x: ship.x + 18, y: ship.y });
 }
 
 function startGame() {
     document.getElementById("startScreen").style.display = "none";
     score = 0; lives = 5; asteroids = []; lasers = [];
     gameActive = true; gamePaused = false;
-    resize();
     gameLoop();
 }
 
 function update() {
     if(!gameActive || gamePaused) return;
 
-    // Boundary Protection: Ship cannot go off the actual canvas width
+    // Movement restricted to the 600px width
     if (keys["ArrowLeft"] && ship.x > 0) ship.x -= 6;
-    if (keys["ArrowRight"] && ship.x < canvas.width - ship.w) ship.x += 6;
+    if (keys["ArrowRight"] && ship.x < 600 - ship.w) ship.x += 6;
 
-    lasers.forEach((l, i) => { l.y -= 8; if(l.y < -20) lasers.splice(i, 1); });
-    stars.forEach(s => { s.y += 0.5; if(s.y > canvas.height) s.y = 0; });
+    lasers.forEach((l, i) => { l.y -= 8; if(l.y < -10) lasers.splice(i, 1); });
+    stars.forEach(s => { s.y += 0.5; if(s.y > 400) s.y = 0; });
 
-    if(Math.random() < 0.02) {
-        asteroids.push({ x: Math.random() * (canvas.width - 30), y: -40, size: 30 });
+    if(Math.random() < 0.015) {
+        asteroids.push({ x: Math.random() * 570, y: -30, size: 30 });
     }
 
     asteroids.forEach((a, ai) => {
-        a.y += 3;
+        a.y += 2.2;
         lasers.forEach((l, li) => {
             if(rectIntersect(l.x, l.y, 4, 10, a.x, a.y, a.size, a.size)) {
                 lasers.splice(li, 1);
@@ -222,24 +216,21 @@ function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
 }
 
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, 600, 400);
 
-    // Stars
     ctx.fillStyle = "white";
-    stars.forEach(s => {
-        if(s.x < canvas.width && s.y < canvas.height) ctx.fillRect(s.x, s.y, s.s, s.s);
-    });
+    stars.forEach(s => ctx.fillRect(s.x, s.y, s.s, s.s));
 
-    // ORIGINAL SHIP DESIGN
+    // SHIP DESIGN
     ctx.fillStyle = "#a465ff";
     ctx.shadowBlur = 10;
     ctx.shadowColor = "#a465ff";
     ctx.fillRect(ship.x, ship.y, ship.w, ship.h); 
     ctx.fillStyle = "white";
-    ctx.fillRect(ship.x + (ship.w/2) - 5, ship.y - 5, 10, 5); 
+    ctx.fillRect(ship.x + 15, ship.y - 5, 10, 5); 
     ctx.shadowBlur = 0;
 
-    // Lasers & Asteroids
     ctx.fillStyle = "yellow";
     lasers.forEach(l => ctx.fillRect(l.x, l.y, 4, 12));
     ctx.fillStyle = "#888";
@@ -252,7 +243,7 @@ function draw() {
 function triggerQuiz() {
     gamePaused = true;
     const q = questions[Math.floor(Math.random() * questions.length)];
-    document.getElementById("question").innerHTML = `<b>Match the Term:</b><br><br>"${q.def}"`;
+    document.getElementById("question").innerHTML = `<b>Definition:</b><br><br>"${q.def}"`;
     const opts = document.getElementById("options");
     opts.innerHTML = "";
     
@@ -267,7 +258,7 @@ function triggerQuiz() {
         const btn = document.createElement("button");
         btn.textContent = choice;
         btn.onclick = () => {
-            if (choice === q.word) score += 5;
+            if (choice === q.word) score += 10;
             document.getElementById("quizBox").style.display = "none";
             gamePaused = false;
         };
@@ -278,7 +269,7 @@ function triggerQuiz() {
 
 function endGame() {
     gameActive = false;
-    alert("Game Over! Score: " + score);
+    alert("Mission Over! Final Score: " + score);
     location.reload();
 }
 
