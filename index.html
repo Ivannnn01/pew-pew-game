@@ -5,348 +5,329 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
     <title>Galaxy Quest: IR Edition</title>
     <style>
+        :root {
+            --primary: #a465ff;
+            --bg: #050505;
+        }
+
         body {
             margin: 0;
-            background: #050505;
+            background: var(--bg);
             color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            overflow: hidden; /* Prevents bounce scroll on mobile */
+            overflow-x: hidden;
+            touch-action: manipulation;
         }
 
-        h2 { margin: 10px 0; color: #a465ff; text-shadow: 0 0 10px #a465ff; }
+        h2 { margin: 10px 0; color: var(--primary); text-shadow: 0 0 10px var(--primary); font-size: 1.5rem; }
 
+        /* Responsive Container */
         #main-container {
+            width: 95%;
+            max-width: 600px;
             display: flex;
-            gap: 20px;
-            align-items: flex-start;
-            margin-top: 10px;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 100px; /* Space for mobile buttons at bottom */
         }
 
+        #infoBar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .stat-box { background: #111; padding: 5px 10px; border: 1px solid #444; border-radius: 4px; }
+
+        /* Game Area Scales to Screen */
         #gameArea {
             position: relative;
-            touch-action: none; /* Critical for mobile */
+            width: 100%;
+            aspect-ratio: 6 / 4; /* Maintains game proportions */
+            background: #000;
         }
 
         canvas {
-            background: radial-gradient(circle at bottom, #1b0030 0%, #000 100%);
+            width: 100%;
+            height: 100%;
             display: block;
             border: 2px solid #333;
-            box-shadow: 0 0 20px rgba(164, 101, 255, 0.2);
-            cursor: crosshair;
+            background: radial-gradient(circle at bottom, #1b0030 0%, #000 100%);
+            touch-action: none;
         }
 
-        /* Mobile Controls Styling */
+        /* Fixed Mobile Controls for Thumbs */
         #mobile-controls {
-            display: none; /* Hidden on desktop */
-            position: absolute;
-            bottom: 20px;
+            display: none; /* Hidden on Desktop */
+            position: fixed;
+            bottom: 30px;
+            left: 0;
             width: 100%;
             justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 30px;
             box-sizing: border-box;
-            pointer-events: none; /* Allows taps to pass through to canvas for firing */
+            z-index: 100;
+            pointer-events: none;
         }
 
         .ctrl-btn {
-            width: 80px;
-            height: 80px;
-            background: rgba(164, 101, 255, 0.2);
-            border: 2px solid #a465ff;
+            width: 75px;
+            height: 75px;
+            background: rgba(164, 101, 255, 0.3);
+            border: 3px solid var(--primary);
             border-radius: 50%;
             color: white;
             font-size: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            pointer-events: auto; /* Re-enable for the buttons themselves */
+            pointer-events: auto;
             user-select: none;
-            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .ctrl-btn:active { background: rgba(164, 101, 255, 0.5); }
+        .ctrl-btn:active { background: rgba(164, 101, 255, 0.7); }
 
-        /* Media query: Show buttons if device has a touch screen */
+        /* Show buttons only on touch devices */
         @media (pointer: coarse) {
             #mobile-controls { display: flex; }
         }
 
-        #infoBar {
-            display: flex;
-            justify-content: space-between;
-            width: 600px;
-            margin-bottom: 5px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .stat-box { background: #111; padding: 5px 15px; border: 1px solid #444; border-radius: 4px; }
-
-        #leaderboardPanel {
-            width: 220px;
-            background: #111;
-            border: 1px solid #444;
-            padding: 15px;
-            height: 400px;
-            box-sizing: border-box;
-        }
-        #leaderboardPanel h3 { margin-top: 0; text-align: center; color: #ffeb3b; border-bottom: 1px solid #444; padding-bottom: 10px;}
-        #scoreList { list-style: none; padding: 0; margin: 0; font-size: 14px; }
-        #scoreList li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222; }
-
-        #startScreen {
+        /* Start Screen Overlay */
+        #startScreen, #quizBox {
             position: absolute;
-            top: 0; left: 0; width: 600px; height: 400px;
-            background: rgba(0,0,0,0.9);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 20;
+            z-index: 50;
+            padding: 20px;
+            box-sizing: border-box;
             text-align: center;
         }
-        .instructions {
-            text-align: left;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px 30px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #555;
+
+        .instructions { font-size: 0.8rem; text-align: left; list-style: none; padding: 0; }
+        input[type="text"] { 
+            padding: 10px; width: 80%; margin-bottom: 10px; 
+            background: #000; color: white; border: 1px solid var(--primary);
         }
-        
-        input[type="text"] {
-            padding: 10px; font-size: 16px; margin-bottom: 15px;
-            border: 2px solid #a465ff; background: #000; color: white; text-align: center;
-            border-radius: 5px;
-        }
-        button.start-btn {
-            padding: 10px 30px; font-size: 16px; background: #a465ff; border: none;
-            cursor: pointer; font-weight: bold; color: #fff; border-radius: 5px;
+        .start-btn { padding: 12px 24px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 5px; }
+
+        #options button {
+            width: 100%; margin: 5px 0; padding: 12px;
+            background: #222; color: white; border: 1px solid #444; border-radius: 5px;
         }
 
-        #quizBox {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: #1a1a1a;
-            padding: 25px;
-            border: 2px solid #a465ff;
-            width: 450px;
-            display: none;
-            z-index: 30;
-            box-shadow: 0 0 50px rgba(0,0,0,0.9);
-            border-radius: 8px;
-        }
-        #options button {
-            display: block; width: 100%; margin: 8px 0; padding: 12px;
-            cursor: pointer; font-size: 14px; background: #333; color: white; 
-            border: 1px solid #555; border-radius: 4px;
-        }
+        #leaderboardPanel { width: 100%; background: #111; padding: 10px; border-radius: 5px; margin-top: 10px; }
+        #scoreList { list-style: none; padding: 0; font-size: 14px; }
+        #scoreList li { display: flex; justify-content: space-between; border-bottom: 1px solid #222; padding: 5px 0; }
+
         .danger-flash { animation: flashRed 0.2s; }
         @keyframes flashRed { 0% { background: #500; } 100% { background: transparent; } }
     </style>
 </head>
 <body>
 
-<h2>🌌 Galaxy Quest: IR Edition</h2>
+<h2>🌌 Galaxy Quest: IR</h2>
 
 <div id="main-container">
-    <div>
-        <div id="infoBar">
-            <div class="stat-box">Pilot: <span id="displayPlayer">Guest</span></div>
-            <div class="stat-box">Score: <span id="score">0</span></div>
-            <div class="stat-box" style="color: #ff4444;">Shields: <span id="lives">5</span></div>
+    <div id="infoBar">
+        <div class="stat-box">Score: <span id="score">0</span></div>
+        <div class="stat-box" style="color: #ff4444;">Shields: <span id="lives">5</span></div>
+    </div>
+
+    <div id="gameArea">
+        <canvas id="game" width="600" height="400"></canvas>
+        
+        <div id="startScreen">
+            <h3 style="color: var(--primary)">MISSION BRIEFING</h3>
+            <ul class="instructions">
+                <li>◀️ ▶️ Buttons or Arrows to Move</li>
+                <li>🚀 Tap Galaxy or Space to Fire</li>
+                <li>💥 Answer questions to score!</li>
+            </ul>
+            <input type="text" id="playerNameInput" placeholder="Enter Pilot Name" maxlength="12">
+            <button class="start-btn" onclick="startGame()">ENGAGE</button>
         </div>
 
-        <div id="gameArea">
-            <canvas id="game" width="600" height="400"></canvas>
-            
-            <div id="mobile-controls">
-                <div id="leftBtn" class="ctrl-btn">◀</div>
-                <div id="rightBtn" class="ctrl-btn">▶</div>
-            </div>
-            
-            <div id="startScreen">
-                <h3 style="color: #a465ff; font-size: 24px;">MISSION BRIEFING</h3>
-                <ul class="instructions">
-                    <li>⬅️ ➡️ <b>Buttons/Arrows</b> to Move</li>
-                    <li>🚀 <b>Tap Screen/Space</b> to Fire</li>
-                    <li>💥 Destroy asteroids to trigger <b>Questions</b></li>
-                    <li>🛡️ Avoid crashing! <b>5 Shield Lives</b></li>
-                </ul>
-                <input type="text" id="playerNameInput" placeholder="Enter Pilot Name" maxlength="12">
-                <button class="start-btn" onclick="startGame()">ENGAGE</button>
-            </div>
-
-            <div id="quizBox">
-                <p id="question" style="margin-top:0; font-size: 1.1em; line-height: 1.5; color: #eee;"></p>
-                <div id="options"></div>
-            </div>
+        <div id="quizBox" style="display: none;">
+            <p id="question"></p>
+            <div id="options" style="width: 100%;"></div>
         </div>
     </div>
 
     <div id="leaderboardPanel">
-        <h3>🏆 Top Commanders</h3>
-        <ul id="scoreList"><li><span>No data</span><span>-</span></li></ul>
+        <h4 style="margin:0; color:#ffeb3b">🏆 Top Commanders</h4>
+        <ul id="scoreList"></ul>
     </div>
+</div>
+
+<div id="mobile-controls">
+    <div id="leftBtn" class="ctrl-btn">◀</div>
+    <div id="rightBtn" class="ctrl-btn">▶</div>
 </div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// ---------------- GAME STATE ----------------
-let ship = { x: 280, y: 360, w: 40, h: 20 };
-let lasers = [];
-let asteroids = [];
-let keys = {};
-let score = 0;
-let lives = 5;
+// Game Variables
+let ship = { x: 280, y: 350, w: 40, h: 20 };
+let lasers = [], asteroids = [], keys = {};
+let score = 0, lives = 5, gameActive = false, gamePaused = false;
 let playerName = "Guest";
-let gamePaused = false;
-let gameActive = false;
-let currentQuestion = null;
-let asteroidInterval = null;
 
 const questions = [
-    { word: "Realism", def: "A theory that views states as rational actors pursuing power and survival in an anarchic international system." },
-    { word: "Liberalism", def: "A theory that emphasises cooperation, institutions, democracy, and economic interdependence in reducing conflict." },
-    { word: "Constructivism", def: "A theory arguing that international politics is shaped by ideas, norms, identities, and social interactions." },
-    { word: "Anarchy", def: "The absence of a central authority above states in international politics." },
-    { word: "Security Dilemma", def: "A situation where one state’s defensive actions increase insecurity in other states, leading to escalation." },
-    { word: "Hard Power", def: "The use of military force or economic pressure to influence other states." },
-    { word: "Soft Power", def: "The ability to influence others through attraction, culture, values, and diplomacy." },
-    { word: "Deterrence", def: "The prevention of aggression by threatening unacceptable retaliation." }
+    { word: "Realism", def: "States are rational actors pursuing power in an anarchic system." },
+    { word: "Liberalism", def: "Emphasis on cooperation, institutions, and democracy." },
+    { word: "Anarchy", def: "The absence of a central authority above states." },
+    { word: "Soft Power", def: "Influencing others through attraction and culture." },
+    { word: "Sovereignty", def: "A state's supreme authority over its territory." }
 ];
 
-// ---------------- INPUT HANDLING ----------------
+// --- INPUTS ---
+window.addEventListener("keydown", e => keys[e.code] = true);
+window.addEventListener("keyup", e => keys[e.code] = false);
 
-// Keyboard
-document.addEventListener("keydown", e => {
-    keys[e.code] = true;
-    if (e.code === "Space" && gameActive && !gamePaused) {
-        fireLaser();
-        keys["Space"] = false; 
-    }
-});
-document.addEventListener("keyup", e => keys[e.code] = false);
+// Mobile Controls
+const setupBtn = (btn, key) => {
+    btn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys[key] = true; });
+    btn.addEventListener("pointerup", () => keys[key] = false);
+    btn.addEventListener("pointerleave", () => keys[key] = false);
+};
+setupBtn(document.getElementById("leftBtn"), "ArrowLeft");
+setupBtn(document.getElementById("rightBtn"), "ArrowRight");
 
-// Mobile/Tablet Controls
-const leftBtn = document.getElementById("leftBtn");
-const rightBtn = document.getElementById("rightBtn");
-
-leftBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys["ArrowLeft"] = true; });
-leftBtn.addEventListener("pointerup", () => { keys["ArrowLeft"] = false; });
-leftBtn.addEventListener("pointerleave", () => { keys["ArrowLeft"] = false; });
-
-rightBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); keys["ArrowRight"] = true; });
-rightBtn.addEventListener("pointerup", () => { keys["ArrowRight"] = false; });
-rightBtn.addEventListener("pointerleave", () => { keys["ArrowRight"] = false; });
-
-// Tap to fire (On Canvas)
+// Fire on Canvas Tap
 canvas.addEventListener("pointerdown", (e) => {
     if (gameActive && !gamePaused) {
-        fireLaser();
+        // Prevent double fire when clicking UI buttons
+        if (e.target === canvas) lasers.push({ x: ship.x + 18, y: ship.y });
     }
 });
 
-function fireLaser() {
-    lasers.push({ x: ship.x + 18, y: ship.y });
-}
-
-// ---------------- GAME ENGINE ----------------
-
 function startGame() {
-    const input = document.getElementById("playerNameInput");
-    if (input.value.trim() !== "") playerName = input.value.trim();
-    
-    document.getElementById("displayPlayer").textContent = playerName;
+    const name = document.getElementById("playerNameInput").value.trim();
+    if (name) playerName = name;
     document.getElementById("startScreen").style.display = "none";
-    
-    score = 0; lives = 5; ship.x = 280; lasers = []; asteroids = [];
-    document.getElementById("score").textContent = score;
-    document.getElementById("lives").textContent = lives;
-
+    score = 0; lives = 5; asteroids = []; lasers = [];
     gameActive = true;
     gamePaused = false;
-    if (asteroidInterval) clearInterval(asteroidInterval);
-    asteroidInterval = setInterval(spawnAsteroid, 1200);
-    
-    updateLeaderboardUI();
+    updateUI();
     gameLoop();
 }
 
 function spawnAsteroid() {
-    if (!gameActive || gamePaused) return;
-    asteroids.push({ x: Math.random() * (canvas.width - 30), y: -30, size: 30 });
+    if (gameActive && !gamePaused && Math.random() < 0.02) {
+        asteroids.push({ x: Math.random() * (canvas.width - 30), y: -30, size: 30 });
+    }
 }
 
 function update() {
     if (!gameActive || gamePaused) return;
 
-    if (keys["ArrowLeft"] && ship.x > 0) ship.x -= 5;
-    if (keys["ArrowRight"] && ship.x < canvas.width - ship.w) ship.x += 5;
+    if ((keys["ArrowLeft"] || keys["KeyA"]) && ship.x > 0) ship.x -= 5;
+    if ((keys["ArrowRight"] || keys["KeyD"]) && ship.x < canvas.width - ship.w) ship.x += 5;
+    if (keys["Space"]) { lasers.push({ x: ship.x + 18, y: ship.y }); keys["Space"] = false; }
 
-    lasers.forEach(l => l.y -= 7);
-    asteroids.forEach(a => a.y += 2.5);
-
-    lasers = lasers.filter(l => l.y > -20);
-    asteroids = asteroids.filter(a => a.y < canvas.height + 30);
-
-    // Collisions
-    lasers.forEach((l, li) => {
-        asteroids.forEach((a, ai) => {
+    lasers.forEach((l, i) => { l.y -= 7; if (l.y < 0) lasers.splice(i, 1); });
+    
+    asteroids.forEach((a, ai) => {
+        a.y += 2;
+        // Collision: Laser
+        lasers.forEach((l, li) => {
             if (rectIntersect(l.x, l.y, 4, 10, a.x, a.y, a.size, a.size)) {
                 lasers.splice(li, 1);
                 asteroids.splice(ai, 1);
-                askQuestion();
+                triggerQuiz();
             }
         });
-    });
-
-    asteroids.forEach((a, ai) => {
+        // Collision: Ship
         if (rectIntersect(ship.x, ship.y, ship.w, ship.h, a.x, a.y, a.size, a.size)) {
             asteroids.splice(ai, 1);
-            handleCrash();
+            lives--;
+            updateUI();
+            if (lives <= 0) endGame();
         }
+        if (a.y > canvas.height) asteroids.splice(ai, 1);
     });
+    spawnAsteroid();
 }
 
 function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
     return x2 < x1 + w1 && x2 + w2 > x1 && y2 < y1 + h1 && y2 + h2 > y1;
 }
 
-function handleCrash() {
-    lives--;
-    document.getElementById("lives").textContent = lives;
-    canvas.classList.add("danger-flash");
-    setTimeout(() => canvas.classList.remove("danger-flash"), 200);
-    if (lives <= 0) endGame(false);
-}
-
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     // Ship
     ctx.fillStyle = "#a465ff";
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = "#a465ff";
     ctx.fillRect(ship.x, ship.y, ship.w, ship.h);
-    ctx.fillStyle = "white";
-    ctx.fillRect(ship.x + 15, ship.y - 5, 10, 5);
-    ctx.shadowBlur = 0;
-
     // Lasers
-    ctx.fillStyle = "#ff0";
+    ctx.fillStyle = "yellow";
     lasers.forEach(l => ctx.fillRect(l.x, l.y, 4, 10));
-
     // Asteroids
     ctx.fillStyle = "#888";
-    asteroids.forEach(a => {
-        ctx.fillRect(a.x, a.y, a.size, a.size);
+    asteroids.forEach(a => ctx.fillRect(a.x, a.y, a.size, a.size));
+}
+
+function triggerQuiz() {
+    gamePaused = true;
+    const q = questions[Math.floor(Math.random() * questions.length)];
+    document.getElementById("question").innerHTML = `Definition:<br><i>"${q.def}"</i>`;
+    const opts = document.getElementById("options");
+    opts.innerHTML = "";
+    
+    let choices = [q.word];
+    while(choices.length < 3) {
+        let rw = questions[Math.floor(Math.random() * questions.length)].word;
+        if(!choices.includes(rw)) choices.push(rw);
+    }
+    choices.sort(() => Math.random() - 0.5);
+
+    choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.textContent = choice;
+        btn.onclick = () => {
+            if (choice === q.word) score += 10;
+            updateUI();
+            document.getElementById("quizBox").style.display = "none";
+            gamePaused = false;
+        };
+        opts.appendChild(btn);
     });
+    document.getElementById("quizBox").style.display = "flex";
+}
+
+function updateUI() {
+    document.getElementById("score").textContent = score;
+    document.getElementById("lives").textContent = lives;
+}
+
+function endGame() {
+    gameActive = false;
+    alert(`Game Over, Commander ${playerName}! Score: ${score}`);
+    saveScore(playerName, score);
+    location.reload();
+}
+
+function saveScore(n, s) {
+    let scores = JSON.parse(localStorage.getItem('gq_scores')) || [];
+    scores.push({n, s});
+    scores.sort((a,b) => b.s - a.s);
+    localStorage.setItem('gq_scores', JSON.stringify(scores.slice(0, 5)));
+}
+
+function loadScores() {
+    let scores = JSON.parse(localStorage.getItem('gq_scores')) || [];
+    document.getElementById("scoreList").innerHTML = scores.map(s => `<li><span>${s.n}</span><span>${s.s}</span></li>`).join("") || "<li>No Data</li>";
 }
 
 function gameLoop() {
@@ -356,58 +337,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// ---------------- QUIZ SYSTEM ----------------
-
-function askQuestion() {
-    gamePaused = true;
-    currentQuestion = questions[Math.floor(Math.random() * questions.length)];
-    document.getElementById("question").innerHTML = `Which term matches this definition?<br><br><i>"${currentQuestion.def}"</i>`;
-    
-    const optionsDiv = document.getElementById("options");
-    optionsDiv.innerHTML = "";
-    let choices = [currentQuestion.word];
-    while (choices.length < 4) {
-        let rWord = questions[Math.floor(Math.random() * questions.length)].word;
-        if (!choices.includes(rWord)) choices.push(rWord);
-    }
-    choices.sort(() => Math.random() - 0.5);
-
-    choices.forEach(choice => {
-        let btn = document.createElement("button");
-        btn.textContent = choice;
-        btn.onclick = () => {
-            if (choice === currentQuestion.word) {
-                score++;
-                document.getElementById("score").textContent = score;
-            }
-            document.getElementById("quizBox").style.display = "none";
-            gamePaused = false;
-        };
-        optionsDiv.appendChild(btn);
-    });
-    document.getElementById("quizBox").style.display = "block";
-}
-
-function endGame(win) {
-    gameActive = false;
-    clearInterval(asteroidInterval);
-    saveToLeaderboard(playerName, score);
-    alert("Game Over! Score: " + score);
-    document.getElementById("startScreen").style.display = "flex";
-}
-
-function saveToLeaderboard(name, score) {
-    let scores = JSON.parse(localStorage.getItem('galaxy_quest_scores')) || [];
-    scores.push({ name, score });
-    scores.sort((a, b) => b.score - a.score);
-    localStorage.setItem('galaxy_quest_scores', JSON.stringify(scores.slice(0, 10)));
-}
-
-function updateLeaderboardUI() {
-    let scores = JSON.parse(localStorage.getItem('galaxy_quest_scores')) || [];
-    const list = document.getElementById("scoreList");
-    list.innerHTML = scores.map(s => `<li><span>${s.name}</span> <span>${s.score}</span></li>`).join("") || "<li>No Data</li>";
-}
+loadScores();
 </script>
 </body>
 </html>
