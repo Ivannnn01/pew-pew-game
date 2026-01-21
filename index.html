@@ -14,12 +14,13 @@
             font-family: 'Segoe UI', Tahoma, sans-serif;
             display: flex; flex-direction: column;
             align-items: center;
-            overflow: hidden; /* Stops scrolling */
+            overflow: hidden; 
             height: 100vh; width: 100vw;
+            /* #Mobile Controls: Prevents the gray box highlight on Android taps */
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* This container ensures the game never overflows the phone width */
+        /* #Mobile Controls: Layout container to keep everything inside the screen */
         #game-wrapper {
             width: 100%;
             max-width: 600px;
@@ -43,18 +44,22 @@
             width: 100%;
             overflow: hidden;
             background: black;
+            display: flex;
+            align-items: center;
         }
 
+        /* #Mobile Controls: This makes the 600px canvas shrink to fit your phone width */
         canvas {
-            /* Force the canvas to fit the width of the screen while keeping proportions */
             width: 100% !important;
             height: auto !important;
+            max-height: 100%;
             display: block;
             touch-action: none;
             background: radial-gradient(circle at bottom, #1b0030 0%, #000 100%);
         }
 
-        #mobile-controls {
+        /* #Mobile Controls: CSS for the on-screen buttons */
+        #mobile-ui {
             display: flex; position: absolute; bottom: 30px; width: 100%;
             justify-content: space-between; padding: 0 20px; box-sizing: border-box;
             z-index: 100; pointer-events: none;
@@ -66,11 +71,13 @@
             width: 70px; height: 70px; background: rgba(164, 101, 255, 0.2);
             border: 2px solid var(--primary); border-radius: 50%; color: white;
             font-size: 24px; display: flex; align-items: center; justify-content: center;
-            user-select: none;
+            user-select: none; -webkit-user-select: none;
         }
 
-        #fireBtn { background: rgba(255, 68, 68, 0.3); border-color: var(--danger); width: 80px; height: 80px; }
-        .ctrl-btn:active { background: rgba(164, 101, 255, 0.6); transform: scale(0.95); }
+        #fireBtn { background: rgba(255, 68, 68, 0.3); border-color: var(--danger); width: 85px; height: 85px; font-weight: bold; }
+        
+        /* #Mobile Controls: Visual feedback when pressing buttons */
+        .ctrl-btn:active { background: rgba(164, 101, 255, 0.6); transform: scale(0.9); }
 
         #startScreen, #quizBox {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -79,7 +86,7 @@
             padding: 20px; box-sizing: border-box; text-align: center;
         }
 
-        .start-btn { padding: 12px 40px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 5px; }
+        .start-btn { padding: 12px 40px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer;}
         #options button { width: 100%; margin: 6px 0; padding: 14px; background: #222; color: white; border: 1px solid #555; border-radius: 6px; }
     </style>
 </head>
@@ -96,7 +103,7 @@
         
         <div id="startScreen">
             <h2 style="color: var(--primary); margin:0;">GALAXY QUEST</h2>
-            <p style="font-size: 0.9rem; margin: 15px 0;">Use Buttons to Move & Fire</p>
+            <p style="font-size: 0.9rem; margin: 15px 0;">Touch buttons to Move & Fire</p>
             <input type="text" id="playerNameInput" placeholder="Pilot Name" maxlength="12" style="padding:10px; margin-bottom:20px; border: 1px solid var(--primary); background: #000; color: white; text-align: center; width: 70%;">
             <button class="start-btn" onclick="startGame()">ENGAGE</button>
         </div>
@@ -107,7 +114,7 @@
         </div>
     </div>
 
-    <div id="mobile-controls">
+    <div id="mobile-ui">
         <div class="d-pad">
             <div id="leftBtn" class="ctrl-btn">◀</div>
             <div id="rightBtn" class="ctrl-btn">▶</div>
@@ -130,34 +137,68 @@ let score = 0, lives = 5, gameActive = false, gamePaused = false;
 // Starfield
 for(let i=0; i<80; i++) stars.push({ x: Math.random()*600, y: Math.random()*400, s: Math.random()*2 });
 
+// --- FULL 30 QUESTION DATABASE ---
 const questions = [
     { word: "Realism", def: "A theory that views states as rational actors pursuing power and survival in an anarchic international system." },
     { word: "Liberalism", def: "A theory that emphasises cooperation, institutions, democracy, and economic interdependence in reducing conflict." },
+    { word: "Constructivism", def: "A theory arguing that international politics is shaped by ideas, norms, identities, and social interactions." },
+    { word: "Neorealism", def: "A realist theory that explains state behaviour primarily through the structure of the international system, especially anarchy." },
+    { word: "Neoliberal Institutionalism", def: "A theory that argues international institutions facilitate cooperation even under anarchy." },
     { word: "Anarchy", def: "The absence of a central authority above states in international politics." },
-    { word: "Sovereignty", def: "The principle that a state has supreme authority over its territory and domestic affairs." },
+    { word: "Balance of Power", def: "A situation where power is distributed among states so that no single state dominates others." },
+    { word: "Security Dilemma", def: "A situation where one state’s defensive actions increase insecurity in other states, leading to escalation." },
+    { word: "National Interest", def: "A state’s primary goals and objectives in foreign policy, usually centred on security and prosperity." },
+    { word: "State Sovereignty", def: "The principle that a state has supreme authority over its territory and domestic affairs." },
     { word: "Hard Power", def: "The use of military force or economic pressure to influence other states." },
     { word: "Soft Power", def: "The ability to influence others through attraction, culture, values, and diplomacy." },
+    { word: "Smart Power", def: "The strategic combination of hard power and soft power." },
     { word: "Deterrence", def: "The prevention of aggression by threatening unacceptable retaliation." },
-    { word: "National Interest", def: "A state’s primary goals and objectives in foreign policy, usually centred on security and prosperity." },
+    { word: "Coercive Diplomacy", def: "The use of threats or limited force to persuade a state to change its behaviour." },
+    { word: "Diplomacy", def: "The management of international relations through negotiation and dialogue." },
+    { word: "Economic Sanctions", def: "The use of trade or financial restrictions to pressure a state into changing its policies." },
+    { word: "Military Intervention", def: "The use of armed force by a state in another state’s territory." },
+    { word: "Foreign Aid", def: "Financial, technical, or humanitarian assistance given to another country." },
+    { word: "Proxy War", def: "A conflict in which major powers support opposing sides without direct confrontation." },
+    { word: "Collective Security", def: "A system where states agree to respond collectively to threats against any member." },
+    { word: "Multilateralism", def: "Cooperation among three or more states on shared issues." },
+    { word: "Bilateralism", def: "Cooperation or agreements between two states." },
+    { word: "Alliance", def: "A formal agreement between states for mutual support, often military." },
+    { word: "Non-Alignment", def: "A foreign policy stance of not formally aligning with major power blocs." },
     { word: "International Law", def: "A set of rules and norms governing relations between states." },
+    { word: "Humanitarian Intervention", def: "The use of force to prevent or stop widespread human rights abuses." },
+    { word: "R2P (Responsibility to Protect)", def: "The principle that states must protect populations from mass atrocities, and the international community may intervene if they fail." },
+    { word: "Global Governance", def: "The collective management of global issues through international institutions and norms." },
     { word: "Nationalism", def: "A belief that prioritises the interests, culture, and identity of one’s nation, often above others." }
 ];
 
-// --- TOUCH HANDLING ---
+// #Mobile Controls: Script to handle touch events
 const setupBtn = (id, keyCode) => {
     const el = document.getElementById(id);
-    // touchstart/touchend are best for Android/iPad performance
-    el.addEventListener("touchstart", (e) => { e.preventDefault(); keys[keyCode] = true; });
-    el.addEventListener("touchend", (e) => { e.preventDefault(); keys[keyCode] = false; });
-    // mouse support for desktop testing
+    
+    // touchstart: when finger touches button
+    el.addEventListener("touchstart", (e) => { 
+        e.preventDefault(); 
+        keys[keyCode] = true; 
+    });
+    
+    // touchend: when finger lifts up
+    el.addEventListener("touchend", (e) => { 
+        e.preventDefault(); 
+        keys[keyCode] = false; 
+    });
+
+    // Support for mouse testing on computer
     el.addEventListener("mousedown", () => keys[keyCode] = true);
     el.addEventListener("mouseup", () => keys[keyCode] = false);
 };
 
 setupBtn("leftBtn", "ArrowLeft");
 setupBtn("rightBtn", "ArrowRight");
+
+// #Mobile Controls: Dedicated fire button logic
 document.getElementById("fireBtn").addEventListener("touchstart", (e) => {
-    e.preventDefault(); if(gameActive && !gamePaused) shoot();
+    e.preventDefault(); 
+    if(gameActive && !gamePaused) shoot();
 });
 document.getElementById("fireBtn").addEventListener("mousedown", () => {
     if(gameActive && !gamePaused) shoot();
@@ -183,7 +224,7 @@ function startGame() {
 function update() {
     if(!gameActive || gamePaused) return;
 
-    // Movement restricted to the 600px width
+    // Movement logic (using keys object updated by mobile buttons)
     if (keys["ArrowLeft"] && ship.x > 0) ship.x -= 6;
     if (keys["ArrowRight"] && ship.x < 600 - ship.w) ship.x += 6;
 
@@ -222,7 +263,7 @@ function draw() {
     ctx.fillStyle = "white";
     stars.forEach(s => ctx.fillRect(s.x, s.y, s.s, s.s));
 
-    // SHIP DESIGN
+    // RETAINED SHIP DESIGN
     ctx.fillStyle = "#a465ff";
     ctx.shadowBlur = 10;
     ctx.shadowColor = "#a465ff";
