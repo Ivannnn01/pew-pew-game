@@ -15,7 +15,7 @@
             margin: 0;
             background: var(--bg);
             color: white;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -24,6 +24,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* Layout Container to match original look */
         #main-container {
             width: 100%;
             max-width: 600px;
@@ -36,16 +37,23 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
-            font-size: 14px;
+            font-size: 18px;
+            font-weight: bold;
         }
 
-        .stat-box { background: rgba(17, 17, 17, 0.8); padding: 5px 10px; border: 1px solid #444; border-radius: 4px; }
+        .stat-box { 
+            background: #111; 
+            padding: 5px 15px; 
+            border: 1px solid #444; 
+            border-radius: 4px; 
+        }
 
         #gameArea {
             position: relative;
             width: 100%;
             aspect-ratio: 6 / 4;
             border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(164, 101, 255, 0.2);
             background: black;
         }
 
@@ -54,9 +62,10 @@
             height: 100%;
             display: block;
             touch-action: none;
+            background: radial-gradient(circle at bottom, #1b0030 0%, #000 100%);
         }
 
-        /* Mobile Controls - Positioned for Android/iPad thumbs */
+        /* Mobile Controls */
         #mobile-controls {
             display: flex;
             position: fixed;
@@ -75,7 +84,7 @@
         .ctrl-btn {
             width: 75px;
             height: 75px;
-            background: rgba(164, 101, 255, 0.2);
+            background: rgba(164, 101, 255, 0.15);
             border: 2px solid var(--primary);
             border-radius: 50%;
             color: white;
@@ -87,7 +96,7 @@
         }
 
         #fireBtn {
-            background: rgba(255, 68, 68, 0.3);
+            background: rgba(255, 68, 68, 0.2);
             border-color: var(--danger);
             width: 90px;
             height: 90px;
@@ -95,14 +104,14 @@
             font-size: 18px;
         }
 
-        .ctrl-btn:active { background: rgba(164, 101, 255, 0.5); }
-        #fireBtn:active { background: rgba(255, 68, 68, 0.6); }
+        .ctrl-btn:active { background: rgba(164, 101, 255, 0.4); }
+        #fireBtn:active { background: rgba(255, 68, 68, 0.5); }
 
-        /* Overlays */
+        /* Overlays - Matching original Start Screen style */
         #startScreen, #quizBox {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -112,13 +121,33 @@
             box-sizing: border-box;
         }
 
-        .start-btn { padding: 15px 40px; background: var(--primary); border: none; color: white; font-weight: bold; border-radius: 8px; }
+        .instructions {
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #555;
+            font-size: 14px;
+        }
+
+        .start-btn { 
+            padding: 10px 30px; 
+            background: var(--primary); 
+            border: none; 
+            color: white; 
+            font-weight: bold; 
+            border-radius: 5px; 
+            font-size: 16px;
+            cursor: pointer;
+        }
 
         #options button {
-            width: 100%; margin: 6px 0; padding: 12px;
-            background: #222; color: white; border: 1px solid #444; border-radius: 5px;
-            font-size: 0.9rem;
+            width: 100%; margin: 8px 0; padding: 12px;
+            background: #333; color: white; border: 1px solid #555; border-radius: 4px;
+            font-size: 14px;
         }
+        #options button:hover { background: #555; border-color: var(--primary); }
     </style>
 </head>
 <body>
@@ -133,14 +162,19 @@
         <canvas id="game" width="600" height="400"></canvas>
         
         <div id="startScreen">
-            <h2 style="color: var(--primary); margin: 0;">GALAXY QUEST</h2>
-            <p style="text-align: center; font-size: 0.8rem;">Defend the Galaxy & Learn IR Theory!</p>
-            <input type="text" id="playerNameInput" placeholder="Pilot Name" maxlength="12" style="padding:10px; margin-bottom:15px; width: 70%; text-align: center;">
+            <h3 style="color: var(--primary); font-size: 24px;">MISSION BRIEFING</h3>
+            <ul class="instructions">
+                <li>⬅️ ➡️ <b>Buttons/Arrows</b> to Move Ship</li>
+                <li>🚀 <b>FIRE Button/Space</b> to Fire Lasers</li>
+                <li>💥 Destroy asteroids to trigger <b>Questions</b></li>
+                <li>🛡️ Avoid crashing! You have <b>5 Shield Lives</b></li>
+            </ul>
+            <input type="text" id="playerNameInput" placeholder="Enter Pilot Name" maxlength="12" style="padding:10px; margin-bottom:15px; border: 2px solid var(--primary); background: #000; color: white; text-align: center;">
             <button class="start-btn" onclick="startGame()">ENGAGE</button>
         </div>
 
         <div id="quizBox" style="display: none;">
-            <p id="question" style="text-align: center; font-size: 1rem; line-height: 1.4;"></p>
+            <p id="question" style="text-align: center; font-size: 1.1em; line-height: 1.5; color: #eee;"></p>
             <div id="options" style="width: 100%;"></div>
         </div>
     </div>
@@ -160,15 +194,15 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// Game Settings
-let ship = { x: 280, y: 340, w: 40, h: 25 };
+// --- RETAINED GAME STATE ---
+let ship = { x: 280, y: 360, w: 40, h: 20 };
 let lasers = [], asteroids = [], stars = [], keys = {};
 let score = 0, lives = 5, gameActive = false, gamePaused = false;
 
-// Starfield
-for(let i=0; i<80; i++) stars.push({ x: Math.random()*600, y: Math.random()*400, s: Math.random()*2 });
+// Starfield generation
+for(let i=0; i<100; i++) stars.push({ x: Math.random()*600, y: Math.random()*400, s: Math.random()*2 });
 
-// --- FULL 30 QUESTION DATABASE ---
+// --- RETAINED FULL DATABASE ---
 const questions = [
     { word: "Realism", def: "A theory that views states as rational actors pursuing power and survival in an anarchic international system." },
     { word: "Liberalism", def: "A theory that emphasises cooperation, institutions, democracy, and economic interdependence in reducing conflict." },
@@ -222,7 +256,7 @@ window.addEventListener("keydown", e => {
 window.addEventListener("keyup", e => keys[e.code] = false);
 
 function shoot() {
-    if(lasers.length < 5) lasers.push({ x: ship.x + 18, y: ship.y });
+    if(lasers.length < 7) lasers.push({ x: ship.x + 18, y: ship.y });
 }
 
 function startGame() {
@@ -238,15 +272,15 @@ function update() {
     if (keys["ArrowLeft"] && ship.x > 0) ship.x -= 6;
     if (keys["ArrowRight"] && ship.x < canvas.width - ship.w) ship.x += 6;
 
-    lasers.forEach((l, i) => { l.y -= 8; if(l.y < 0) lasers.splice(i, 1); });
+    lasers.forEach((l, i) => { l.y -= 7; if(l.y < -10) lasers.splice(i, 1); });
     stars.forEach(s => { s.y += 0.5; if(s.y > 400) s.y = 0; });
 
     if(Math.random() < 0.015) {
-        asteroids.push({ x: Math.random() * 570, y: -30, size: 30 });
+        asteroids.push({ x: Math.random() * 560, y: -30, size: 30 });
     }
 
     asteroids.forEach((a, ai) => {
-        a.y += 2.2;
+        a.y += 2.5;
         lasers.forEach((l, li) => {
             if(rectIntersect(l.x, l.y, 4, 10, a.x, a.y, a.size, a.size)) {
                 lasers.splice(li, 1);
@@ -267,24 +301,35 @@ function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2) {
 }
 
 function draw() {
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Starfield Background
     ctx.fillStyle = "white";
     stars.forEach(s => ctx.fillRect(s.x, s.y, s.s, s.s));
 
-    // SHIP WITH GUNS
+    // --- RETAINED SHIP DESIGN (Galaxy Quest Style) ---
     ctx.fillStyle = "#a465ff";
-    ctx.fillRect(ship.x, ship.y + 5, ship.w, 15); // Main Wing
-    ctx.fillRect(ship.x + 5, ship.y, 5, 12);     // Left Gun
-    ctx.fillRect(ship.x + ship.w - 10, ship.y, 5, 12); // Right Gun
-    ctx.fillStyle = "#00f0ff";
-    ctx.fillRect(ship.x + 15, ship.y + 8, 10, 8); // Cockpit
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = "#a465ff";
+    ctx.fillRect(ship.x, ship.y, ship.w, ship.h); // Main Body
+    
+    // Ship Detail/Gun Sprite elements
+    ctx.fillStyle = "white";
+    ctx.fillRect(ship.x + 15, ship.y - 5, 10, 5); // Central Gun Tip
+    ctx.shadowBlur = 0;
 
-    ctx.fillStyle = "yellow";
-    lasers.forEach(l => ctx.fillRect(l.x, l.y, 4, 12));
+    // Lasers
+    ctx.fillStyle = "#ff0";
+    lasers.forEach(l => ctx.fillRect(l.x, l.y, 4, 10));
+
+    // Asteroids
     ctx.fillStyle = "#888";
-    asteroids.forEach(a => ctx.fillRect(a.x, a.y, a.size, a.size));
+    asteroids.forEach(a => {
+        ctx.fillRect(a.x, a.y, a.size, a.size);
+        ctx.fillStyle = "#aaa"; 
+        ctx.fillRect(a.x + 5, a.y + 5, 5, 5);
+        ctx.fillStyle = "#888";     
+    });
     
     document.getElementById("score").textContent = score;
     document.getElementById("lives").textContent = lives;
@@ -293,7 +338,7 @@ function draw() {
 function triggerQuiz() {
     gamePaused = true;
     const q = questions[Math.floor(Math.random() * questions.length)];
-    document.getElementById("question").innerHTML = `<b>Match the Term to the Definition:</b><br><br>"${q.def}"`;
+    document.getElementById("question").innerHTML = `Which term matches this definition?<br><br><i>"${q.def}"</i>`;
     const opts = document.getElementById("options");
     opts.innerHTML = "";
     
@@ -308,7 +353,7 @@ function triggerQuiz() {
         const btn = document.createElement("button");
         btn.textContent = choice;
         btn.onclick = () => {
-            if (choice === q.word) score += 10;
+            if (choice === q.word) score++;
             document.getElementById("quizBox").style.display = "none";
             gamePaused = false;
         };
@@ -319,7 +364,7 @@ function triggerQuiz() {
 
 function endGame() {
     gameActive = false;
-    alert("Shields Critical! Mission Over. Final Score: " + score);
+    alert("💥 MISSION OVER! Final Score: " + score);
     location.reload();
 }
 
